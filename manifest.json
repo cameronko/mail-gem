@@ -3,7 +3,8 @@
     "name": "Email Thread Extractor",
     "version": "1.0",
     "description": "Expands Gmail threads and extracts email data.",
-    "permissions": ["scripting", "activeTab"],
+    "permissions": ["scripting", "activeTab", "aiLanguageModelOriginTrial"],
+    "trial_tokens": ["AsBRsHGtJxC061H4ZGpN6Vllu29aw/trCOc0Znsubiul0YZNkOnCZ5S9MxS6l8lx11dseNuP7/CLI0jX2G5GZQwAAAB4eyJvcmlnaW4iOiJjaHJvbWUtZXh0ZW5zaW9uOi8vaGZpZXBwbHBvZmVjZGhib2Fob2lkamVnYW1vZGhnbmQiLCJmZWF0dXJlIjoiQUlQcm9tcHRBUElGb3JFeHRlbnNpb24iLCJleHBpcnkiOjE3NjA0ODYzOTl9"],
     "action": {
         "default_popup": "popup.html",
         "default_icon": {
