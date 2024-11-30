@@ -27,7 +27,7 @@ class OutlookExtractor extends EmailExtractor {
             throw new Error('No emails found in Outlook.');
         }
 
-        for (let i = 0; i < Math.min(this.maxMessages, emailElements.length); i++) {\
+        for (let i = 0; i < Math.min(this.maxMessages, emailElements.length); i++) {
             // Extract sender and recipient names
             const emailElement = emailElements[i];
             const fromElement = emailElement.querySelector('[aria-label^="From:"]');
