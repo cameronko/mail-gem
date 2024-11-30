@@ -4,7 +4,8 @@
     "version": "1.0",
     "description": "Expands Gmail threads and extracts email data.",
     "permissions": ["scripting", "activeTab", "aiLanguageModelOriginTrial"],
-    "trial_tokens": ["AsBRsHGtJxC061H4ZGpN6Vllu29aw/trCOc0Znsubiul0YZNkOnCZ5S9MxS6l8lx11dseNuP7/CLI0jX2G5GZQwAAAB4eyJvcmlnaW4iOiJjaHJvbWUtZXh0ZW5zaW9uOi8vaGZpZXBwbHBvZmVjZGhib2Fob2lkamVnYW1vZGhnbmQiLCJmZWF0dXJlIjoiQUlQcm9tcHRBUElGb3JFeHRlbnNpb24iLCJleHBpcnkiOjE3NjA0ODYzOTl9"],
+    "trial_tokens": ["Agwv8qTsMQ95iniYGNbDzfn1kXzyH/aRbyBlq1k7E5d42IzFNRylzlJU+j7h6BefOCun/FVU0bMyPybhJ70XTQEAAAB4eyJvcmlnaW4iOiJjaHJvbWUtZXh0ZW5zaW9uOi8vcGVsZmtkb2hibWNmcGpna25rYWFoZ2NvZm1mb2tvYm0iLCJmZWF0dXJlIjoiQUlQcm9tcHRBUElGb3JFeHRlbnNpb24iLCJleHBpcnkiOjE3NjA0ODYzOTl9"],
+    "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAwkWyUMPiOxz8JkbXPCGLK+n0Twd0Jj3N0AyiIU5wZxhOoPey7UuUAFFw/35i/fbNmOUlgWYhljB01PY+UrDwxyhA68r/KeLBA1Rxse981ouHQRlb/dRVnMVETUhPbVS0S/+5Q7+my/W2a+916kFCWVRs0rPBgWEG+qoBUnAJ4+SIiTeF9o07Mlcz13mAtV8nE2VVx0+x98LGshnw0UNo+n0guEpgAVJeWKa/Pc5yv/mL0yFbMCjFJkwSjhAChWUyP+ZkwEq/d2qyJsrrZaVlkvj+AZ5X8FjTkfwzHZWF5JFmSru2vmugQOid7D5gFFDVTZJwBZdKxVsJbVTGcvtbJQIDAQAB",
     "action": {
         "default_popup": "popup.html",
         "default_icon": {
