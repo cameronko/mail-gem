@@ -2,16 +2,31 @@
     "manifest_version": 3,
     "name": "MailGem",
     "version": "1.0",
-    "description": "Generate lightning quick responses to emails with AI.",
+    "description": "Generate lightning-quick AI responses to your emails securely.",
     "permissions": [
         "scripting",
-        "activeTab",
         "aiLanguageModelOriginTrial"
+    ],
+    "host_permissions": [
+        "https://mail.google.com/*",
+        "https://outlook.office.com/*",
+        "https://outlook.live.com/*",
+        "https://outlook.office365.com/*"
     ],
     "background": {
         "service_worker": "background.js"
     },
-    "host_permissions": ["<all_urls>"],
+    "content_scripts": [
+        {
+            "matches": [
+                "https://mail.google.com/*",
+                "https://outlook.office.com/*",
+                "https://outlook.live.com/*",
+                "https://outlook.office365.com/*"
+            ],
+            "js": ["contentScript.js"]
+        }
+    ],
     "trial_tokens": [
         "Agwv8qTsMQ95iniYGNbDzfn1kXzyH/aRbyBlq1k7E5d42IzFNRylzlJU+j7h6BefOCun/FVU0bMyPybhJ70XTQEAAAB4eyJvcmlnaW4iOiJjaHJvbWUtZXh0ZW5zaW9uOi8vcGVsZmtkb2hibWNmcGpna25rYWFoZ2NvZm1mb2tvYm0iLCJmZWF0dXJlIjoiQUlQcm9tcHRBUElGb3JFeHRlbnNpb24iLCJleHBpcnkiOjE3NjA0ODYzOTl9"
     ],
@@ -25,18 +40,16 @@
     "web_accessible_resources": [
         {
             "resources": ["icons/*.png"],
-            "matches": ["<all_urls>"]
+            "matches": ["https://mail.google.com/*", "https://outlook.office.com/*", "https://outlook.live.com/*", "https://outlook.office365.com/*"]
         }
     ],
-    "content_scripts": [
-        {
-        "matches": [
-            "https://mail.google.com/*",
-            "https://outlook.office.com/*",
-            "https://outlook.live.com/*",
-            "https://outlook.office365.com/*"
-        ],
-        "js": ["contentScript.js"]
-        }
-    ]
+    "action": {
+        "default_icon": {
+            "16": "icons/icon16.png",
+            "32": "icons/icon32.png",
+            "48": "icons/icon48.png",
+            "128": "icons/icon128.png"
+        },
+        "default_title": "MailGem - AI Email Assistant"
+    }
 }
