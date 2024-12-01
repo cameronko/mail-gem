@@ -1,23 +1,41 @@
 {
     "manifest_version": 3,
-    "name": "Email Thread Extractor",
+    "name": "MailGem",
     "version": "1.0",
-    "description": "Expands Gmail threads and extracts email data.",
-    "permissions": ["scripting", "activeTab", "aiLanguageModelOriginTrial"],
-    "trial_tokens": ["Agwv8qTsMQ95iniYGNbDzfn1kXzyH/aRbyBlq1k7E5d42IzFNRylzlJU+j7h6BefOCun/FVU0bMyPybhJ70XTQEAAAB4eyJvcmlnaW4iOiJjaHJvbWUtZXh0ZW5zaW9uOi8vcGVsZmtkb2hibWNmcGpna25rYWFoZ2NvZm1mb2tvYm0iLCJmZWF0dXJlIjoiQUlQcm9tcHRBUElGb3JFeHRlbnNpb24iLCJleHBpcnkiOjE3NjA0ODYzOTl9"],
-    "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAwkWyUMPiOxz8JkbXPCGLK+n0Twd0Jj3N0AyiIU5wZxhOoPey7UuUAFFw/35i/fbNmOUlgWYhljB01PY+UrDwxyhA68r/KeLBA1Rxse981ouHQRlb/dRVnMVETUhPbVS0S/+5Q7+my/W2a+916kFCWVRs0rPBgWEG+qoBUnAJ4+SIiTeF9o07Mlcz13mAtV8nE2VVx0+x98LGshnw0UNo+n0guEpgAVJeWKa/Pc5yv/mL0yFbMCjFJkwSjhAChWUyP+ZkwEq/d2qyJsrrZaVlkvj+AZ5X8FjTkfwzHZWF5JFmSru2vmugQOid7D5gFFDVTZJwBZdKxVsJbVTGcvtbJQIDAQAB",
-    "action": {
-        "default_popup": "popup.html",
-        "default_icon": {
-        "16": "icon16.png",
-        "32": "icon32.png",
-        "48": "icon48.png",
-        "128": "icon128.png"
-        }
+    "description": "Generate lightning quick responses to emails with AI.",
+    "permissions": [
+        "scripting",
+        "activeTab",
+        "aiLanguageModelOriginTrial"
+    ],
+    "background": {
+        "service_worker": "background.js"
     },
+    "host_permissions": ["<all_urls>"],
+    "trial_tokens": [
+        "Agwv8qTsMQ95iniYGNbDzfn1kXzyH/aRbyBlq1k7E5d42IzFNRylzlJU+j7h6BefOCun/FVU0bMyPybhJ70XTQEAAAB4eyJvcmlnaW4iOiJjaHJvbWUtZXh0ZW5zaW9uOi8vcGVsZmtkb2hibWNmcGpna25rYWFoZ2NvZm1mb2tvYm0iLCJmZWF0dXJlIjoiQUlQcm9tcHRBUElGb3JFeHRlbnNpb24iLCJleHBpcnkiOjE3NjA0ODYzOTl9"
+    ],
+    "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAwkWyUMPiOxz8JkbXPCGLK+n0Twd0Jj3N0AyiIU5wZxhOoPey7UuUAFFw/35i/fbNmOUlgWYhljB01PY+UrDwxyhA68r/KeLBA1Rxse981ouHQRlb/dRVnMVETUhPbVS0S/+5Q7+my/W2a+916kFCWVRs0rPBgWEG+qoBUnAJ4+SIiTeF9o07Mlcz13mAtV8nE2VVx0+x98LGshnw0UNo+n0guEpgAVJeWKa/Pc5yv/mL0yFbMCjFJkwSjhAChWUyP+ZkwEq/d2qyJsrrZaVlkvj+AZ5X8FjTkfwzHZWF5JFmSru2vmugQOid7D5gFFDVTZJwBZdKxVsJbVTGcvtbJQIDAQAB",
+    "icons": {
+        "16": "icons/icon16.png",
+        "32": "icons/icon32.png",
+        "48": "icons/icon48.png",
+        "128": "icons/icon128.png"
+    },
+    "web_accessible_resources": [
+        {
+            "resources": ["icons/*.png"],
+            "matches": ["<all_urls>"]
+        }
+    ],
     "content_scripts": [
         {
-        "matches": ["https://mail.google.com/*"],
+        "matches": [
+            "https://mail.google.com/*",
+            "https://outlook.office.com/*",
+            "https://outlook.live.com/*",
+            "https://outlook.office365.com/*"
+        ],
         "js": ["contentScript.js"]
         }
     ]
