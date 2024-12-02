@@ -403,7 +403,7 @@ const monitorOutlookAction = () => {
  * Inserts the AI button into Outlook's reply box.
  */
 const insertAIButtonOutlook = () => {
-  const replyBox = document.querySelector('div[aria-label="Message body"]');
+  const replyBox = document.querySelector('[role="textbox"][aria-label^="Message body"][contenteditable="true"]');
   if (!replyBox) return;
 
   // Avoid inserting multiple buttons
@@ -432,8 +432,7 @@ const insertAIButtonOutlook = () => {
   aiButton.style.right = '50px';
   aiButton.style.bottom = '10px';
 
-  // Append the button to the reply box container
-  const container = replyBox.closest('div.ms-Viewport');
+  const container = replyBox.parentElement;
   if (container) {
     container.style.position = 'relative';
     container.appendChild(aiButton);
