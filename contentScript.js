@@ -90,7 +90,10 @@ class OutlookExtractor {
    * Throws an error if the operation fails.
    */
   expandAllThreads() {
-    // TODO: Implement thread expansion for Outlook
+    const conversationPanel = document.querySelector('[aria-label="Reading Pane"]');
+    const unexpandedMessages = conversationPanel.querySelectorAll('div[aria-expanded="false"]');
+    // Click the child of each unexpanded message to expand
+    unexpandedMessages.forEach(message => message.firstChild.click());
   }
 
   /**
