@@ -103,34 +103,38 @@ class OutlookExtractor {
    */
   getPrompt() {
     this.expandAllThreads();
-
+  
     let emailThread = 'Here is an email thread to respond to:\n\n';
-    const emailElements = document.querySelectorAll('div[role="listitem"][data-convid]');
+    const emailElements = document.querySelectorAll('div[aria-label="Email message"]');
     if (!emailElements.length) {
       throw new Error('No emails found in Outlook.');
     }
-
+  
     for (let i = 0; i < Math.min(this.maxMessages, emailElements.length); i++) {
       const emailElement = emailElements[i];
-
+  
       // Extract sender
-      const fromElement = emailElement.querySelector('div[data-sender-name]');
-      const fromName = fromElement?.getAttribute('data-sender-name') || 'Unknown Sender';
-
+      const fromElement = emailElement.querySelector('span[aria-label^="From: "] span.OZZZK');
+      const fromName = fromElement?.textContent.trim() || 'Unknown Sender';
+  
       // Extract recipients
-      const toElements = emailElement.querySelectorAll('span._pe_8');
-      const recipients = Array.from(toElements)
-        .map((el) => el.textContent.trim())
-        .join(', ') || 'Unknown Recipient';
-
+      const toElement = emailElement.querySelector('div[aria-label^="To: "]');
+      let recipients = 'Unknown Recipient';
+      if (toElement) {
+        const toElements = toElement.querySelectorAll('span.pU1YL');
+        recipients = Array.from(toElements)
+          .map(el => el.textContent.trim())
+          .join(', ') || 'Unknown Recipient';
+      }
+  
       // Extract email body
-      const bodyElement = emailElement.querySelector('div[autoid][role="presentation"]');
+      const bodyElement = emailElement.querySelector('div[aria-label="Message body"]');
       const body = bodyElement?.innerText.trim() || 'No Content';
-
+  
       // Build the email thread string
       emailThread += `From: ${fromName}\nTo: ${recipients}\n\n${body}\n\n---\n\n`;
     }
-
+  
     return emailThread;
   }
 }
