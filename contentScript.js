@@ -275,6 +275,106 @@ const insertAIButtonGmail = () => {
       aiButton.style.opacity = '1';
     }
   });
+
+
+  let popupContent = ''; // Persistent variable to store popup content
+
+aiButton.addEventListener('mouseover', async () => {
+    // Create the popup element as a text entry box
+    const popup = document.createElement('textarea');
+    popup.value = popupContent; // Restore previous content
+    popup.placeholder = 'Type Context Here!';
+    popup.style.position = 'absolute';
+    popup.style.backgroundColor = '#fff';
+    popup.style.border = '1px solid #ccc';
+    popup.style.borderRadius = '5px';
+    popup.style.padding = '10px';
+    popup.style.boxShadow = '0px 4px 6px rgba(0, 0, 0, 0.1)';
+    popup.style.zIndex = '1000';
+    popup.style.width = '300px'; // Adjust width
+    popup.style.height = '150px'; // Adjust height
+    popup.style.resize = 'none'; // Optional: Disable resizing
+
+    // Position the popup further to the left
+    const rect = aiButton.getBoundingClientRect();
+    popup.style.top = `${rect.top - 190}px`; // Adjust offset to match size
+    popup.style.left = `${rect.left - 200}px`; // Move further to the left
+
+    // Add the popup to the document
+    document.body.appendChild(popup);
+
+    // Add a flag to track whether the popup is being hovered
+    let isPopupHovered = false;
+
+    // Keep the popup when hovered
+    popup.addEventListener('mouseover', () => {
+        isPopupHovered = true;
+    });
+
+    popup.addEventListener('mouseleave', () => {
+        isPopupHovered = false;
+        popupContent = popup.value; // Save content before removal
+        // Delay removal slightly to allow re-entry to popup
+        setTimeout(() => {
+            if (!isPopupHovered) popup.remove();
+        }, 100);
+    });
+
+    // Remove the popup when the mouse leaves the button
+    aiButton.addEventListener(
+        'mouseleave',
+        () => {
+            setTimeout(() => {
+                if (!isPopupHovered) {
+                    popupContent = popup.value; // Save content before removal
+                    popup.remove();
+                }
+            }, 100);
+        },
+        { once: true }
+    );
+
+
+
+    if (!document.querySelector('#generate-ai-icon')) {
+      // Create a new button for the icon
+      const aiIcon = document.createElement('button');
+      aiIcon.id = 'generate-ai-icon';
+      aiIcon.title = 'Generate Your Email';
+      aiIcon.style.width = '32px';
+      aiIcon.style.height = '32px';
+      aiIcon.style.borderRadius = '50%';
+      aiIcon.style.border = 'none';
+      aiIcon.style.cursor = 'pointer';
+      aiIcon.style.boxShadow = '0px 1px 6px rgba(0,0,0,0.3)';
+
+      // Get the icon URL from the extension's icons folder
+      const iconPath = chrome.runtime.getURL('icons/generateIcon32.png');
+      aiIcon.style.backgroundImage = `url('${iconPath}')`;
+      aiIcon.style.backgroundSize = 'contain';
+      aiIcon.style.backgroundRepeat = 'no-repeat';
+      aiIcon.style.backgroundPosition = 'center';
+
+      // Position the icon below the existing button
+      const aiButtonRect = aiButton.getBoundingClientRect();
+      aiIcon.style.position = 'absolute';
+      aiIcon.style.top = `${aiButtonRect.bottom + 10}px`; // Adjust spacing below the button
+      aiIcon.style.left = `${aiButtonRect.left + (aiButtonRect.width / 2) - 16}px`; // Align with the button
+
+      // Add the icon to the document
+      document.body.appendChild(aiIcon);
+
+      // Remove the icon when the mouse leaves both the main button and the new icon
+      const removeIcon = () => {
+          aiIcon.remove();
+          aiButton.removeEventListener('mouseleave', removeIcon);
+          aiIcon.removeEventListener('mouseleave', removeIcon);
+      };
+
+      aiButton.addEventListener('mouseleave', removeIcon, { once: true });
+      aiIcon.addEventListener('mouseleave', removeIcon, { once: true });
+  }
+  });
 };
 
 /**
