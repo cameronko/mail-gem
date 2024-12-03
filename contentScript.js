@@ -211,6 +211,8 @@ const monitorGmailAction = () => {
 /**
  * Inserts the AI button into Gmail's reply box.
  */
+// Content script (content.js)
+
 const insertAIButtonGmail = () => {
   const replyBox = document.querySelector('div[aria-label="Message Body"]');
   if (!replyBox) return;
@@ -223,10 +225,7 @@ const insertAIButtonGmail = () => {
   aiButton.id = 'mailgem-ai-button';
   aiButton.title = 'Generate AI Response';
 
-  // Debugging: Check if button is created correctly
-  console.log('Created aiButton:', aiButton);
-
-  // Set the initial style properties after ensuring the button is created
+  // Set the initial style properties
   aiButton.style.width = '40px';
   aiButton.style.height = '40px';
   aiButton.style.borderRadius = '50%';
@@ -234,6 +233,7 @@ const insertAIButtonGmail = () => {
   aiButton.style.cursor = 'pointer';
   aiButton.style.transition = 'width 0.3s, height 0.3s, border-radius 0.3s'; // Add transition for smooth change
   aiButton.style.boxShadow = '0px 2px 5px rgba(0,0,0,0.3)'; // Apply box shadow safely
+  aiButton.style.zIndex = '9999'; // Set a high z-index to ensure it's above other elements
 
   // Set the initial icon as the background image
   const iconURL = chrome.runtime.getURL('icons/icon48.png');
@@ -249,9 +249,6 @@ const insertAIButtonGmail = () => {
     container = document.body; // Fallback to body if container is not found
   }
 
-  // Debugging: Check if the container is found
-  console.log('Container found:', container);
-
   // Position the button appropriately
   aiButton.style.position = 'absolute';
   aiButton.style.right = '50px';
@@ -261,21 +258,25 @@ const insertAIButtonGmail = () => {
   container.style.position = 'relative';
   container.appendChild(aiButton);
 
-  // Debugging: Check if button was appended correctly
-  console.log('Appended aiButton:', aiButton);
-
   // Handle mouse hover to transform the button into a dialog box
   aiButton.addEventListener('mouseover', () => {
     aiButton.style.width = '300px'; // Expand the button into a dialog box
     aiButton.style.height = '200px'; // Increase height for dialog
     aiButton.style.borderRadius = '10px'; // Round corners for the dialog
 
-    // Create the popup content inside the button
-    aiButton.innerHTML = ''; // Clear the existing icon
-    
+    // Clear the button content (icon) when expanding it into a dialog box
+    aiButton.innerHTML = ''; // Remove the existing content
+
+    // Set up a layout for the dialog box
+    aiButton.style.display = 'flex';
+    aiButton.style.flexDirection = 'column';
+    aiButton.style.padding = '10px';
+    aiButton.style.justifyContent = 'space-between'; // Ensure space between textarea and button
+    aiButton.style.alignItems = 'center';
+
     // Create the text area
     const popupTextarea = document.createElement('textarea');
-    popupTextarea.value = popupContent; // Restore previous content
+    popupTextarea.value = ''; // Optional: You can restore content here if you want
     popupTextarea.placeholder = 'Type Context Here!';
     popupTextarea.style.width = '100%';
     popupTextarea.style.height = '120px';
@@ -333,6 +334,7 @@ const insertAIButtonGmail = () => {
     aiButton.style.width = '40px'; // Revert back to the original size
     aiButton.style.height = '40px'; // Revert back to the original size
     aiButton.style.borderRadius = '50%'; // Round corners for button
+    aiButton.style.display = ''; // Remove flex layout
 
     // Add transition to smoothly revert back
     aiButton.style.transition = 'width 0.3s, height 0.3s, border-radius 0.3s';
@@ -344,6 +346,7 @@ const insertAIButtonGmail = () => {
     }, 300); // Wait for the transition to complete before removing content
   });
 };
+
 
 
 /**
