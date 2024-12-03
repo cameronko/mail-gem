@@ -24,7 +24,8 @@
                 "https://outlook.live.com/*",
                 "https://outlook.office365.com/*"
             ],
-            "js": ["contentScript.js"]
+            "js": ["contentScript.js"],
+            "css": ["contentStyles.css"]
         }
     ],
     "trial_tokens": [
