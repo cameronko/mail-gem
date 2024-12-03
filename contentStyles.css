@@ -48,6 +48,7 @@
   /* Textarea styling */
   .mailgem-ai-textarea {
     width: 100%;
+    z-index: 99999;
     min-height: 160px;
     height: 100%;
     resize: none;

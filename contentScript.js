@@ -232,6 +232,19 @@
         generateButton.style.opacity = '1';
       }
     });
+
+    const dialog = document.querySelector('.mailgem-ai-textarea');
+    if (dialog) {
+    dialog.addEventListener('mousedown', (event) => {
+      event.stopPropagation();
+    });
+    dialog.addEventListener('click', (event) => {
+      event.stopPropagation();
+    });
+    dialog.addEventListener('focus', (event) => {
+      event.stopPropagation();
+    }, true); // Use the capture phase to intercept focus early
+    }
   };
 
   /**
@@ -241,7 +254,9 @@
     // Observe mutations in the body subtree
     const observer = new MutationObserver(() => {
       const replyBox = document.querySelector('div[aria-label="Message Body"]');
+      const sendBtn = document.querySelector('div[aria-label="Send"]');
       if (replyBox && !replyBox.dataset.aiButtonInjected) {
+        replyBox.style.minHeight = "400px";
         insertAIButton(replyBox, true);
         replyBox.dataset.aiButtonInjected = 'true';
       }
@@ -251,7 +266,9 @@
 
     // Check for the reply box on initial load
     const replyBox = document.querySelector('div[aria-label="Message Body"]');
+    const sendBtn = document.querySelector('div[aria-label="Send"]');
     if (replyBox && !replyBox.dataset.aiButtonInjected) {
+      replyBox.style.minHeight = "400px";
       insertAIButton(replyBox, true);
       replyBox.dataset.aiButtonInjected = 'true';
     }
