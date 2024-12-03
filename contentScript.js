@@ -22,7 +22,7 @@ class GmailExtractor {
       // Simply click the "Expand all" button for Gmail (if available)
       const expandAllButton = document.querySelector('[aria-label="Expand all"]');
       if (expandAllButton) {
-          expandAllButton.click();
+        expandAllButton.click();
       }
     } catch (error) {
       throw new Error('Failed to expand all threads in Gmail.');
@@ -52,13 +52,14 @@ class GmailExtractor {
 
       // Extract recipients
       let recipientElements = message.querySelectorAll('.g2');
-      let recipients = Array.from(recipientElements)
-        .map((el) => {
-          let name = el.getAttribute('name') || '';
-          let email = el.getAttribute('email') || '';
-          return `${name} <${email}>`;
-        })
-        .join(', ') || 'Unknown Recipient';
+      let recipients =
+        Array.from(recipientElements)
+          .map((el) => {
+            let name = el.getAttribute('name') || '';
+            let email = el.getAttribute('email') || '';
+            return `${name} <${email}>`;
+          })
+          .join(', ') || 'Unknown Recipient';
 
       // Extract email body
       let bodyElement = message.querySelector('div.a3s');
@@ -93,7 +94,7 @@ class OutlookExtractor {
     const conversationPanel = document.querySelector('[aria-label="Reading Pane"]');
     const unexpandedMessages = conversationPanel.querySelectorAll('div[aria-expanded="false"]');
     // Click the child of each unexpanded message to expand
-    unexpandedMessages.forEach(message => message.firstChild.click());
+    unexpandedMessages.forEach((message) => message.firstChild.click());
   }
 
   /**
@@ -103,38 +104,39 @@ class OutlookExtractor {
    */
   getPrompt() {
     this.expandAllThreads();
-  
+
     let emailThread = 'Here is an email thread to respond to:\n\n';
     const emailElements = document.querySelectorAll('div[aria-label="Email message"]');
     if (!emailElements.length) {
       throw new Error('No emails found in Outlook.');
     }
-  
+
     for (let i = 0; i < Math.min(this.maxMessages, emailElements.length); i++) {
       const emailElement = emailElements[i];
-  
+
       // Extract sender
       const fromElement = emailElement.querySelector('span[aria-label^="From: "] span.OZZZK');
       const fromName = fromElement?.textContent.trim() || 'Unknown Sender';
-  
+
       // Extract recipients
       const toElement = emailElement.querySelector('div[aria-label^="To: "]');
       let recipients = 'Unknown Recipient';
       if (toElement) {
         const toElements = toElement.querySelectorAll('span.pU1YL');
-        recipients = Array.from(toElements)
-          .map(el => el.textContent.trim())
-          .join(', ') || 'Unknown Recipient';
+        recipients =
+          Array.from(toElements)
+            .map((el) => el.textContent.trim())
+            .join(', ') || 'Unknown Recipient';
       }
-  
+
       // Extract email body
       const bodyElement = emailElement.querySelector('div[aria-label="Message body"]');
       const body = bodyElement?.innerText.trim() || 'No Content';
-  
+
       // Build the email thread string
       emailThread += `From: ${fromName}\nTo: ${recipients}\n\n${body}\n\n---\n\n`;
     }
-  
+
     return emailThread;
   }
 }
@@ -159,66 +161,47 @@ const observeUrlChange = () => {
  */
 const init = () => {
   if (currentUrl.includes('mail.google.com')) {
-    monitorGmailAction();
+    monitorGmailReplyBox();
   } else if (
     currentUrl.includes('outlook.office.com') ||
     currentUrl.includes('outlook.live.com') ||
     currentUrl.includes('outlook.office365.com')
   ) {
-    monitorOutlookAction();
+    monitorOutlookReplyBox();
   }
 };
 
 /**
- * Monitors Gmail interactions to insert the AI button when appropriate.
+ * Monitors the DOM for the appearance of Gmail's reply box and inserts the AI button.
  */
-const monitorGmailAction = () => {
-  document.addEventListener('click', function (e) {
-    const target = e.target;
-
-    // Case 1: Footer buttons ("Reply" and "Forward")
-    const footerButton = target.closest('span.ams[role="link"]');
-    if (footerButton && (footerButton.textContent === 'Reply' || footerButton.textContent === 'Forward')) {
-      setTimeout(() => {
-        insertAIButtonGmail();
-      }, 500); // Wait for the reply box to appear
-      return;
+const monitorGmailReplyBox = () => {
+  // Observe mutations in the body subtree
+  const observer = new MutationObserver(() => {
+    const replyBox = document.querySelector('div[aria-label="Message Body"]');
+    if (replyBox && !replyBox.dataset.aiButtonInjected) {
+      insertAIButtonGmail(replyBox);
+      replyBox.dataset.aiButtonInjected = 'true';
     }
+  });
 
-    // Case 2: "More" menu Reply/Forward button
-    const moreMenuButton = target.closest('div[role="menuitem"]');
-    if (moreMenuButton && (moreMenuButton.id == 'r' || moreMenuButton.id === 'r3')) { // 'r' is the ID for reply, 'r3' is the ID for forward
-      setTimeout(() => {
-        insertAIButtonGmail();
-      }, 500); // Wait for the reply box to appear
-      return;
-    }
+  observer.observe(document.body, { childList: true, subtree: true });
 
-    // Case 3: Toolbar/other buttons (Reply, Reply All, Forward)
-    const toolbarButton = target.closest('div[role="button"][aria-label]');
-    if (toolbarButton) {
-      const label = toolbarButton.getAttribute('aria-label');
-      if (['Reply', 'Reply all', 'Forward'].includes(label)) {
-        setTimeout(() => {
-          insertAIButtonGmail();
-        }, 500); // Wait for the reply box to appear
-      }
-    }
-  }, true // Use capture phase to catch the event early
-  );
+  // Check for the reply box on initial load
+  const replyBox = document.querySelector('div[aria-label="Message Body"]');
+  if (replyBox && !replyBox.dataset.aiButtonInjected) {
+    insertAIButtonGmail(replyBox);
+    replyBox.dataset.aiButtonInjected = 'true';
+  }
 };
 
 /**
  * Inserts the AI button into Gmail's reply box.
  */
-// Content script (content.js)
-
-const insertAIButtonGmail = () => {
-  const replyBox = document.querySelector('div[aria-label="Message Body"]');
+const insertAIButtonGmail = (replyBox) => {
   if (!replyBox) return;
 
   // Avoid inserting multiple buttons
-  if (document.getElementById('mailgem-ai-button')) return;
+  if (replyBox.parentElement.querySelector('#mailgem-ai-button')) return;
 
   // Create the AI button
   const aiButton = document.createElement('button');
@@ -231,9 +214,9 @@ const insertAIButtonGmail = () => {
   aiButton.style.borderRadius = '50%';
   aiButton.style.border = 'none';
   aiButton.style.cursor = 'pointer';
-  aiButton.style.transition = 'width 0.3s, height 0.3s, border-radius 0.3s'; // Add transition for smooth change
-  aiButton.style.boxShadow = '0px 2px 5px rgba(0,0,0,0.3)'; // Apply box shadow safely
-  aiButton.style.zIndex = '9999'; // Set a high z-index to ensure it's above other elements
+  aiButton.style.transition = 'width 0.3s, height 0.3s, border-radius 0.3s';
+  aiButton.style.boxShadow = '0px 2px 5px rgba(0,0,0,0.3)';
+  aiButton.style.zIndex = '9999';
 
   // Set the initial icon as the background image
   const iconURL = chrome.runtime.getURL('icons/icon48.png');
@@ -242,11 +225,11 @@ const insertAIButtonGmail = () => {
   aiButton.style.backgroundRepeat = 'no-repeat';
   aiButton.style.backgroundPosition = 'center';
 
-  // Get the replyBox element
-  let container = replyBox?.parentElement; // Use optional chaining to safely access parentElement
+  // Get the replyBox element's container
+  let container = replyBox.parentElement;
   if (!container) {
     console.error('Reply box container not found');
-    container = document.body; // Fallback to body if container is not found
+    container = document.body;
   }
 
   // Position the button appropriately
@@ -254,29 +237,29 @@ const insertAIButtonGmail = () => {
   aiButton.style.right = '50px';
   aiButton.style.bottom = '10px';
 
-  // Append the button to the reply box container (or body if not found)
+  // Append the button to the reply box container
   container.style.position = 'relative';
   container.appendChild(aiButton);
 
   // Handle mouse hover to transform the button into a dialog box
   aiButton.addEventListener('mouseover', () => {
-    aiButton.style.width = '300px'; // Expand the button into a dialog box
-    aiButton.style.height = '200px'; // Increase height for dialog
-    aiButton.style.borderRadius = '10px'; // Round corners for the dialog
+    aiButton.style.width = '300px';
+    aiButton.style.height = '200px';
+    aiButton.style.borderRadius = '10px';
 
-    // Clear the button content (icon) when expanding it into a dialog box
-    aiButton.innerHTML = ''; // Remove the existing content
+    // Clear the button content when expanding it into a dialog box
+    aiButton.innerHTML = '';
 
     // Set up a layout for the dialog box
     aiButton.style.display = 'flex';
     aiButton.style.flexDirection = 'column';
     aiButton.style.padding = '10px';
-    aiButton.style.justifyContent = 'space-between'; // Ensure space between textarea and button
+    aiButton.style.justifyContent = 'space-between';
     aiButton.style.alignItems = 'center';
 
     // Create the text area
     const popupTextarea = document.createElement('textarea');
-    popupTextarea.value = ''; // Optional: You can restore content here if you want
+    popupTextarea.value = '';
     popupTextarea.placeholder = 'Type Context Here!';
     popupTextarea.style.width = '100%';
     popupTextarea.style.height = '120px';
@@ -331,55 +314,57 @@ const insertAIButtonGmail = () => {
 
   // Handle mouse leave to revert back to the original button
   aiButton.addEventListener('mouseleave', () => {
-    aiButton.style.width = '40px'; // Revert back to the original size
-    aiButton.style.height = '40px'; // Revert back to the original size
-    aiButton.style.borderRadius = '50%'; // Round corners for button
-    aiButton.style.display = ''; // Remove flex layout
+    aiButton.style.width = '40px';
+    aiButton.style.height = '40px';
+    aiButton.style.borderRadius = '50%';
+    aiButton.style.display = '';
 
     // Add transition to smoothly revert back
     aiButton.style.transition = 'width 0.3s, height 0.3s, border-radius 0.3s';
 
-    // Remove the popup content (and revert the button to its original state)
+    // Remove the popup content
     setTimeout(() => {
-      aiButton.innerHTML = ''; // Clear current content
-      aiButton.style.backgroundImage = `url('${iconURL}')`; // Reset icon
-    }, 300); // Wait for the transition to complete before removing content
+      aiButton.innerHTML = '';
+      aiButton.style.backgroundImage = `url('${iconURL}')`;
+    }, 300);
   });
 };
 
-
-
 /**
- * Monitors Outlook interactions to insert the AI button when appropriate.
+ * Monitors the DOM for the appearance of Outlook's reply box and inserts the AI button.
  */
-const monitorOutlookAction = () => {
-  document.addEventListener(
-    'click',
-    function (e) {
-      const targetButton = e.target.closest('button[aria-label]');
-      if (!targetButton) return; // Exit if no button is clicked
+const monitorOutlookReplyBox = () => {
+  // Observe mutations in the body subtree
+  const observer = new MutationObserver(() => {
+    const replyBox = document.querySelector(
+      '[role="textbox"][aria-label^="Message body"][contenteditable="true"]'
+    );
+    if (replyBox && !replyBox.dataset.aiButtonInjected) {
+      insertAIButtonOutlook(replyBox);
+      replyBox.dataset.aiButtonInjected = 'true';
+    }
+  });
 
-      const buttonLabel = targetButton.getAttribute('aria-label');
+  observer.observe(document.body, { childList: true, subtree: true });
 
-      if (['Reply', 'Reply all', 'Forward'].includes(buttonLabel)) {
-        setTimeout(() => {
-          insertAIButtonOutlook();
-        }, 500); // Wait for the reply box to appear
-      }
-    },
-    true // Use capture phase to catch the event early
+  // Check for the reply box on initial load
+  const replyBox = document.querySelector(
+    '[role="textbox"][aria-label^="Message body"][contenteditable="true"]'
   );
+  if (replyBox && !replyBox.dataset.aiButtonInjected) {
+    insertAIButtonOutlook(replyBox);
+    replyBox.dataset.aiButtonInjected = 'true';
+  }
 };
 
 /**
  * Inserts the AI button into Outlook's reply box.
  */
-const insertAIButtonOutlook = () => {
-  const replyBox = document.querySelector('[role="textbox"][aria-label^="Message body"][contenteditable="true"]');
+const insertAIButtonOutlook = (replyBox) => {
   if (!replyBox) return;
 
   // Avoid inserting multiple buttons
-  if (document.getElementById('mailgem-ai-button')) return;
+  if (replyBox.parentElement.querySelector('#mailgem-ai-button')) return;
 
   // Create the AI button
   const aiButton = document.createElement('button');
@@ -391,6 +376,7 @@ const insertAIButtonOutlook = () => {
   aiButton.style.border = 'none';
   aiButton.style.cursor = 'pointer';
   aiButton.style.boxShadow = '0px 2px 5px rgba(0,0,0,0.3)';
+  aiButton.style.zIndex = '9999';
 
   // Get the icon URL from the extension's icons folder
   const iconURL = chrome.runtime.getURL('icons/icon48.png');
@@ -410,32 +396,92 @@ const insertAIButtonOutlook = () => {
     container.appendChild(aiButton);
   }
 
-  aiButton.addEventListener('click', async () => {
-    aiButton.disabled = true;
-    aiButton.style.opacity = '0.5';
-    try {
-      const extractor = new OutlookExtractor();
-      const promptText = extractor.getPrompt();
+  // Handle mouse hover to transform the button into a dialog box
+  aiButton.addEventListener('mouseover', () => {
+    aiButton.style.width = '300px';
+    aiButton.style.height = '200px';
+    aiButton.style.borderRadius = '10px';
 
-      // Send the prompt to the background script
-      chrome.runtime.sendMessage(
-        { action: 'generateAIResponse', promptText: promptText },
-        (response) => {
-          if (response.error) {
-            alert(response.error);
-          } else {
-            // Insert the AI response into the reply box
-            insertTextAtCursor(replyBox, response.aiResponse);
+    // Clear the button content when expanding it into a dialog box
+    aiButton.innerHTML = '';
+
+    // Set up a layout for the dialog box
+    aiButton.style.display = 'flex';
+    aiButton.style.flexDirection = 'column';
+    aiButton.style.padding = '10px';
+    aiButton.style.justifyContent = 'space-between';
+    aiButton.style.alignItems = 'center';
+
+    // Create the text area
+    const popupTextarea = document.createElement('textarea');
+    popupTextarea.value = '';
+    popupTextarea.placeholder = 'Type Context Here!';
+    popupTextarea.style.width = '100%';
+    popupTextarea.style.height = '120px';
+    popupTextarea.style.resize = 'none';
+    popupTextarea.style.marginBottom = '10px';
+
+    // Create the Generate button
+    const generateButton = document.createElement('button');
+    generateButton.textContent = 'Generate';
+    generateButton.style.width = '100%';
+    generateButton.style.height = '30px';
+    generateButton.style.cursor = 'pointer';
+    generateButton.style.border = 'none';
+    generateButton.style.backgroundColor = '#4CAF50';
+    generateButton.style.color = '#fff';
+    generateButton.style.borderRadius = '5px';
+    generateButton.style.fontSize = '14px';
+
+    // Append the elements to the button (now acting as the dialog)
+    aiButton.appendChild(popupTextarea);
+    aiButton.appendChild(generateButton);
+
+    // Event listener for Generate button
+    generateButton.addEventListener('click', async () => {
+      aiButton.disabled = true;
+      aiButton.style.opacity = '0.5';
+      try {
+        const extractor = new OutlookExtractor();
+        const promptText = extractor.getPrompt();
+
+        // Send the prompt to the background script
+        chrome.runtime.sendMessage(
+          { action: 'generateAIResponse', promptText: promptText },
+          (response) => {
+            if (response.error) {
+              alert(response.error);
+            } else {
+              // Insert the AI response into the reply box
+              insertTextAtCursor(replyBox, response.aiResponse);
+            }
+            aiButton.disabled = false;
+            aiButton.style.opacity = '1';
           }
-          aiButton.disabled = false;
-          aiButton.style.opacity = '1';
-        }
-      );
-    } catch (error) {
-      alert(error.message);
-      aiButton.disabled = false;
-      aiButton.style.opacity = '1';
-    }
+        );
+      } catch (error) {
+        alert(error.message);
+        aiButton.disabled = false;
+        aiButton.style.opacity = '1';
+      }
+    });
+  });
+
+  // Handle mouse leave to revert back to the original button
+  aiButton.addEventListener('mouseleave', () => {
+    aiButton.style.width = '40px';
+    aiButton.style.height = '40px';
+    aiButton.style.borderRadius = '50%';
+    aiButton.style.display = '';
+
+    // Add transition to smoothly revert back
+    aiButton.style.transition = 'width 0.3s, height 0.3s, border-radius 0.3s';
+
+    // Remove the popup content
+    setTimeout(() => {
+      aiButton.innerHTML = '';
+      aiButton.style.backgroundImage = `url('${iconURL}')`;
+    }, 300);
   });
 };
 
@@ -489,7 +535,6 @@ const insertTextAtCursor = (element, text) => {
   }
 
   // Dispatch an input event to notify the email service of the changes
-  // This is necessary for updating drafts, the visual editor, etc.
   const event = new Event('input', { bubbles: true });
   element.dispatchEvent(event);
 };
