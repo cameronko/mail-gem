@@ -222,160 +222,129 @@ const insertAIButtonGmail = () => {
   const aiButton = document.createElement('button');
   aiButton.id = 'mailgem-ai-button';
   aiButton.title = 'Generate AI Response';
+
+  // Debugging: Check if button is created correctly
+  console.log('Created aiButton:', aiButton);
+
+  // Set the initial style properties after ensuring the button is created
   aiButton.style.width = '40px';
   aiButton.style.height = '40px';
   aiButton.style.borderRadius = '50%';
   aiButton.style.border = 'none';
   aiButton.style.cursor = 'pointer';
-  aiButton.style.boxShadow = '0px 2px 5px rgba(0,0,0,0.3)';
+  aiButton.style.transition = 'width 0.3s, height 0.3s, border-radius 0.3s'; // Add transition for smooth change
+  aiButton.style.boxShadow = '0px 2px 5px rgba(0,0,0,0.3)'; // Apply box shadow safely
 
-  // Get the icon URL from the extension's icons folder
+  // Set the initial icon as the background image
   const iconURL = chrome.runtime.getURL('icons/icon48.png');
   aiButton.style.backgroundImage = `url('${iconURL}')`;
   aiButton.style.backgroundSize = 'contain';
   aiButton.style.backgroundRepeat = 'no-repeat';
   aiButton.style.backgroundPosition = 'center';
 
+  // Get the replyBox element
+  let container = replyBox?.parentElement; // Use optional chaining to safely access parentElement
+  if (!container) {
+    console.error('Reply box container not found');
+    container = document.body; // Fallback to body if container is not found
+  }
+
+  // Debugging: Check if the container is found
+  console.log('Container found:', container);
+
   // Position the button appropriately
   aiButton.style.position = 'absolute';
   aiButton.style.right = '50px';
   aiButton.style.bottom = '10px';
 
-  // Append the button to the reply box container
-  container = replyBox.parentElement;
-  if (container) {
-    container.style.position = 'relative';
-    container.appendChild(aiButton);
-  }
+  // Append the button to the reply box container (or body if not found)
+  container.style.position = 'relative';
+  container.appendChild(aiButton);
 
-  aiButton.addEventListener('click', async () => {
-    aiButton.disabled = true;
-    aiButton.style.opacity = '0.5';
-    try {
-      const extractor = new GmailExtractor();
-      const promptText = extractor.getPrompt();
+  // Debugging: Check if button was appended correctly
+  console.log('Appended aiButton:', aiButton);
 
-      // Send the prompt to the background script
-      chrome.runtime.sendMessage(
-        { action: 'generateAIResponse', promptText: promptText },
-        (response) => {
-          if (response.error) {
-            alert(response.error);
-          } else {
-            // Insert the AI response into the reply box
-            insertTextAtCursor(replyBox, response.aiResponse);
+  // Handle mouse hover to transform the button into a dialog box
+  aiButton.addEventListener('mouseover', () => {
+    aiButton.style.width = '300px'; // Expand the button into a dialog box
+    aiButton.style.height = '200px'; // Increase height for dialog
+    aiButton.style.borderRadius = '10px'; // Round corners for the dialog
+
+    // Create the popup content inside the button
+    aiButton.innerHTML = ''; // Clear the existing icon
+    
+    // Create the text area
+    const popupTextarea = document.createElement('textarea');
+    popupTextarea.value = popupContent; // Restore previous content
+    popupTextarea.placeholder = 'Type Context Here!';
+    popupTextarea.style.width = '100%';
+    popupTextarea.style.height = '120px';
+    popupTextarea.style.resize = 'none';
+    popupTextarea.style.marginBottom = '10px';
+
+    // Create the Generate button
+    const generateButton = document.createElement('button');
+    generateButton.textContent = 'Generate';
+    generateButton.style.width = '100%';
+    generateButton.style.height = '30px';
+    generateButton.style.cursor = 'pointer';
+    generateButton.style.border = 'none';
+    generateButton.style.backgroundColor = '#4CAF50';
+    generateButton.style.color = '#fff';
+    generateButton.style.borderRadius = '5px';
+    generateButton.style.fontSize = '14px';
+
+    // Append the elements to the button (now acting as the dialog)
+    aiButton.appendChild(popupTextarea);
+    aiButton.appendChild(generateButton);
+
+    // Event listener for Generate button
+    generateButton.addEventListener('click', async () => {
+      aiButton.disabled = true;
+      aiButton.style.opacity = '0.5';
+      try {
+        const extractor = new GmailExtractor();
+        const promptText = extractor.getPrompt();
+
+        // Send the prompt to the background script
+        chrome.runtime.sendMessage(
+          { action: 'generateAIResponse', promptText: promptText },
+          (response) => {
+            if (response.error) {
+              alert(response.error);
+            } else {
+              // Insert the AI response into the reply box
+              insertTextAtCursor(replyBox, response.aiResponse);
+            }
+            aiButton.disabled = false;
+            aiButton.style.opacity = '1';
           }
-          aiButton.disabled = false;
-          aiButton.style.opacity = '1';
-        }
-      );
-    } catch (error) {
-      alert(error.message);
-      aiButton.disabled = false;
-      aiButton.style.opacity = '1';
-    }
+        );
+      } catch (error) {
+        alert(error.message);
+        aiButton.disabled = false;
+        aiButton.style.opacity = '1';
+      }
+    });
   });
 
+  // Handle mouse leave to revert back to the original button
+  aiButton.addEventListener('mouseleave', () => {
+    aiButton.style.width = '40px'; // Revert back to the original size
+    aiButton.style.height = '40px'; // Revert back to the original size
+    aiButton.style.borderRadius = '50%'; // Round corners for button
 
-  let popupContent = ''; // Persistent variable to store popup content
+    // Add transition to smoothly revert back
+    aiButton.style.transition = 'width 0.3s, height 0.3s, border-radius 0.3s';
 
-aiButton.addEventListener('mouseover', async () => {
-    // Create the popup element as a text entry box
-    const popup = document.createElement('textarea');
-    popup.value = popupContent; // Restore previous content
-    popup.placeholder = 'Type Context Here!';
-    popup.style.position = 'absolute';
-    popup.style.backgroundColor = '#fff';
-    popup.style.border = '1px solid #ccc';
-    popup.style.borderRadius = '5px';
-    popup.style.padding = '10px';
-    popup.style.boxShadow = '0px 4px 6px rgba(0, 0, 0, 0.1)';
-    popup.style.zIndex = '1000';
-    popup.style.width = '300px'; // Adjust width
-    popup.style.height = '150px'; // Adjust height
-    popup.style.resize = 'none'; // Optional: Disable resizing
-
-    // Position the popup further to the left
-    const rect = aiButton.getBoundingClientRect();
-    popup.style.top = `${rect.top - 190}px`; // Adjust offset to match size
-    popup.style.left = `${rect.left - 200}px`; // Move further to the left
-
-    // Add the popup to the document
-    document.body.appendChild(popup);
-
-    // Add a flag to track whether the popup is being hovered
-    let isPopupHovered = false;
-
-    // Keep the popup when hovered
-    popup.addEventListener('mouseover', () => {
-        isPopupHovered = true;
-    });
-
-    popup.addEventListener('mouseleave', () => {
-        isPopupHovered = false;
-        popupContent = popup.value; // Save content before removal
-        // Delay removal slightly to allow re-entry to popup
-        setTimeout(() => {
-            if (!isPopupHovered) popup.remove();
-        }, 100);
-    });
-
-    // Remove the popup when the mouse leaves the button
-    aiButton.addEventListener(
-        'mouseleave',
-        () => {
-            setTimeout(() => {
-                if (!isPopupHovered) {
-                    popupContent = popup.value; // Save content before removal
-                    popup.remove();
-                }
-            }, 100);
-        },
-        { once: true }
-    );
-
-
-
-    if (!document.querySelector('#generate-ai-icon')) {
-      // Create a new button for the icon
-      const aiIcon = document.createElement('button');
-      aiIcon.id = 'generate-ai-icon';
-      aiIcon.title = 'Generate Your Email';
-      aiIcon.style.width = '32px';
-      aiIcon.style.height = '32px';
-      aiIcon.style.borderRadius = '50%';
-      aiIcon.style.border = 'none';
-      aiIcon.style.cursor = 'pointer';
-      aiIcon.style.boxShadow = '0px 1px 6px rgba(0,0,0,0.3)';
-
-      // Get the icon URL from the extension's icons folder
-      const iconPath = chrome.runtime.getURL('icons/generateIcon32.png');
-      aiIcon.style.backgroundImage = `url('${iconPath}')`;
-      aiIcon.style.backgroundSize = 'contain';
-      aiIcon.style.backgroundRepeat = 'no-repeat';
-      aiIcon.style.backgroundPosition = 'center';
-
-      // Position the icon below the existing button
-      const aiButtonRect = aiButton.getBoundingClientRect();
-      aiIcon.style.position = 'absolute';
-      aiIcon.style.top = `${aiButtonRect.bottom + 10}px`; // Adjust spacing below the button
-      aiIcon.style.left = `${aiButtonRect.left + (aiButtonRect.width / 2) - 16}px`; // Align with the button
-
-      // Add the icon to the document
-      document.body.appendChild(aiIcon);
-
-      // Remove the icon when the mouse leaves both the main button and the new icon
-      const removeIcon = () => {
-          aiIcon.remove();
-          aiButton.removeEventListener('mouseleave', removeIcon);
-          aiIcon.removeEventListener('mouseleave', removeIcon);
-      };
-
-      aiButton.addEventListener('mouseleave', removeIcon, { once: true });
-      aiIcon.addEventListener('mouseleave', removeIcon, { once: true });
-  }
+    // Remove the popup content (and revert the button to its original state)
+    setTimeout(() => {
+      aiButton.innerHTML = ''; // Clear current content
+      aiButton.style.backgroundImage = `url('${iconURL}')`; // Reset icon
+    }, 300); // Wait for the transition to complete before removing content
   });
 };
+
 
 /**
  * Monitors Outlook interactions to insert the AI button when appropriate.
