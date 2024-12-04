@@ -6,21 +6,12 @@
    * Extracts email threads and generates a structured prompt from Gmail.
    */
   class GmailExtractor {
-    /**
-     * Constructor for GmailExtractor
-     * @param {number} [maxMessages=10] - The maximum number of messages to extract.
-     */
     constructor(maxMessages = 10) {
       this.maxMessages = maxMessages;
     }
 
-    /**
-     * Expands all email threads in Gmail.
-     * Throws an error if the operation fails.
-     */
     expandAllThreads() {
       try {
-        // Simply click the "Expand all" button for Gmail (if available)
         const expandAllButton = document.querySelector('[aria-label="Expand all"]');
         if (expandAllButton) {
           expandAllButton.click();
@@ -30,11 +21,6 @@
       }
     }
 
-    /**
-     * Generates a prompt containing the email thread details.
-     * @returns {string} - The formatted email thread prompt.
-     * @throws {Error} - If no emails are found.
-     */
     getPrompt() {
       this.expandAllThreads();
 
@@ -45,13 +31,11 @@
       }
 
       for (let i = 0; i < Math.min(this.maxMessages, emailElements.length); i++) {
-        // Extract sender's name and email
         let message = emailElements[i];
         let senderElement = message.querySelector('.gD');
         let senderName = senderElement?.getAttribute('name') || 'Unknown Sender';
         let senderEmail = senderElement?.getAttribute('email') || '';
 
-        // Extract recipients
         let recipientElements = message.querySelectorAll('.g2');
         let recipients =
           Array.from(recipientElements)
@@ -62,11 +46,9 @@
             })
             .join(', ') || 'Unknown Recipient';
 
-        // Extract email body
         let bodyElement = message.querySelector('div.a3s');
         let body = bodyElement?.innerText || bodyElement?.textContent || 'No Content';
 
-        // Build the email thread string
         emailThread += `From: ${senderName} <${senderEmail}>\nTo: ${recipients}\n\n${body}\n\n---\n\n`;
       }
 
@@ -79,30 +61,16 @@
    * Extracts email threads and generates a structured prompt from Outlook.
    */
   class OutlookExtractor {
-    /**
-     * Constructor for OutlookExtractor
-     * @param {number} [maxMessages=10] - The maximum number of messages to extract.
-     */
     constructor(maxMessages = 10) {
       this.maxMessages = maxMessages;
     }
 
-    /**
-     * Expands all email threads in Outlook.
-     * Throws an error if the operation fails.
-     */
     expandAllThreads() {
       const conversationPanel = document.querySelector('[aria-label="Reading Pane"]');
       const unexpandedMessages = conversationPanel.querySelectorAll('div[aria-expanded="false"]');
-      // Click the child of each unexpanded message to expand
       unexpandedMessages.forEach((message) => message.firstChild.click());
     }
 
-    /**
-     * Generates a prompt containing the email thread details.
-     * @returns {string} - The formatted email thread prompt.
-     * @throws {Error} - If no emails are found.
-     */
     getPrompt() {
       this.expandAllThreads();
 
@@ -115,11 +83,9 @@
       for (let i = 0; i < Math.min(this.maxMessages, emailElements.length); i++) {
         const emailElement = emailElements[i];
 
-        // Extract sender
         const fromElement = emailElement.querySelector('span[aria-label^="From: "] span.OZZZK');
         const fromName = fromElement?.textContent.trim() || 'Unknown Sender';
 
-        // Extract recipients
         const toElement = emailElement.querySelector('div[aria-label^="To: "]');
         let recipients = 'Unknown Recipient';
         if (toElement) {
@@ -130,11 +96,9 @@
               .join(', ') || 'Unknown Recipient';
         }
 
-        // Extract email body
         const bodyElement = emailElement.querySelector('div[aria-label="Message body"]');
         const body = bodyElement?.innerText.trim() || 'No Content';
 
-        // Build the email thread string
         emailThread += `From: ${fromName}\nTo: ${recipients}\n\n${body}\n\n---\n\n`;
       }
 
@@ -145,9 +109,9 @@
   }
 
   /**
-   * Inserts the AI button into the reply box.
+   * Inserts the AI button into the reply or compose box.
    */
-  const insertAIButton = (replyBox, isGmail = true) => {
+  const insertAIButton = (replyBox, isGmail = true, isNewEmail = false) => {
     if (!replyBox) return;
 
     // Avoid inserting multiple buttons
@@ -157,6 +121,10 @@
     const aiButton = document.createElement('div');
     aiButton.id = 'mailgem-ai-button';
     aiButton.title = 'Generate AI Response';
+    // Add extra bottom margin for gmail to ensure it doesn't cut off the delete button
+    if (isGmail){
+      aiButton.style.bottom = '60px';
+    }
     aiButton.classList.add('mailgem-ai-button');
 
     // Create the icon element
@@ -190,7 +158,7 @@
     // Create the popup content
     const popupTextarea = document.createElement('textarea');
     popupTextarea.classList.add('mailgem-ai-textarea');
-    popupTextarea.placeholder = 'Type context here...';
+    popupTextarea.placeholder = isNewEmail ? 'Provide context for your new email...' : 'Type context here...';
 
     const generateButton = document.createElement('button');
     generateButton.classList.add('mailgem-ai-generate-button');
@@ -205,12 +173,24 @@
       generateButton.disabled = true;
       generateButton.style.opacity = '0.5';
       try {
+        // If it's a new email, ensure context is provided
+        if (isNewEmail && !popupTextarea.value.trim()) {
+          alert('Please provide context for your new email.');
+          generateButton.disabled = false;
+          generateButton.style.opacity = '1';
+          return;
+        }
+
         const extractor = isGmail ? new GmailExtractor() : new OutlookExtractor();
         const promptText = extractor.getPrompt();
 
-        // Optionally include the context from the textarea
+        // Include the context from the textarea if available
         const userContext = popupTextarea.value.trim();
-        const fullPrompt = userContext ? `For this email thread, the respondee also included this context: ${userContext}\n\n${promptText}` : promptText;
+        const fullPrompt = userContext
+          ? isNewEmail
+            ? `The user wants to write a new email here are instructions: ${userContext}`
+            : `For this email thread, the respondee also included this context: ${userContext}\n\n${promptText}`
+          : promptText;
 
         // Send the prompt to the background script
         chrome.runtime.sendMessage(
@@ -233,71 +213,94 @@
       }
     });
 
-    const dialog = document.querySelector('.mailgem-ai-textarea');
-    if (dialog) {
-    dialog.addEventListener('mousedown', (event) => {
+    // Prevent popup from closing when interacting with textarea
+    popupTextarea.addEventListener('mousedown', (event) => {
       event.stopPropagation();
     });
-    dialog.addEventListener('click', (event) => {
+    popupTextarea.addEventListener('click', (event) => {
       event.stopPropagation();
     });
-    dialog.addEventListener('focus', (event) => {
+    popupTextarea.addEventListener('focus', (event) => {
       event.stopPropagation();
     }, true); // Use the capture phase to intercept focus early
-    }
   };
 
   /**
-   * Monitors the DOM for the appearance of Gmail's reply box and inserts the AI button.
+   * Monitors the DOM for Gmail's compose and reply boxes and inserts the AI button.
    */
-  const monitorGmailReplyBox = () => {
-    // Observe mutations in the body subtree
+  const monitorGmailComposeOrReplyBox = () => {
     const observer = new MutationObserver(() => {
-      const replyBox = document.querySelector('div[aria-label="Message Body"]');
-      const sendBtn = document.querySelector('div[aria-label="Send"]');
+      // Detect Compose Box
+      const composeBox = document.querySelector('div.aoI[aria-label="New Message"]');
+      if (composeBox && !composeBox.dataset.aiButtonInjected) {
+        insertAIButton(composeBox, true, true); // isGmail=true, isNewEmail=true
+        composeBox.dataset.aiButtonInjected = 'true';
+      }
+
+      // Detect Reply Box
+      const replyBox = document.querySelector('div.aoI[aria-label^="Re:"]');
       if (replyBox && !replyBox.dataset.aiButtonInjected) {
-        replyBox.style.minHeight = "400px";
-        insertAIButton(replyBox, true);
+        insertAIButton(replyBox, true, false); // isGmail=true, isNewEmail=false
         replyBox.dataset.aiButtonInjected = 'true';
       }
     });
 
     observer.observe(document.body, { childList: true, subtree: true });
 
-    // Check for the reply box on initial load
-    const replyBox = document.querySelector('div[aria-label="Message Body"]');
-    const sendBtn = document.querySelector('div[aria-label="Send"]');
+    // Initial check
+    const composeBox = document.querySelector('div.aoI[aria-label="New Message"]');
+    if (composeBox && !composeBox.dataset.aiButtonInjected) {
+      insertAIButton(composeBox, true, true);
+      composeBox.dataset.aiButtonInjected = 'true';
+    }
+
+    const replyBox = document.querySelector('div.aoI[aria-label^="Re:"]');
     if (replyBox && !replyBox.dataset.aiButtonInjected) {
-      replyBox.style.minHeight = "400px";
-      insertAIButton(replyBox, true);
+      insertAIButton(replyBox, true, false);
       replyBox.dataset.aiButtonInjected = 'true';
     }
   };
 
   /**
-   * Monitors the DOM for the appearance of Outlook's reply box and inserts the AI button.
+   * Monitors the DOM for Outlook's compose and reply boxes and inserts the AI button.
    */
-  const monitorOutlookReplyBox = () => {
-    // Observe mutations in the body subtree
+  const monitorOutlookComposeOrReplyBox = () => {
     const observer = new MutationObserver(() => {
-      const replyBox = document.querySelector(
-        '[role="textbox"][aria-label^="Message body"][contenteditable="true"]'
-      );
-      if (replyBox && !replyBox.dataset.aiButtonInjected) {
-        insertAIButton(replyBox, false);
-        replyBox.dataset.aiButtonInjected = 'true';
+      // Detect Compose Box
+      const composeBox = document.querySelector('div.aoI[aria-label="New Message"]'); // Adjust selector if different
+      if (composeBox && !composeBox.dataset.aiButtonInjected) {
+        insertAIButton(composeBox, false, true); // isGmail=false, isNewEmail=true
+        composeBox.dataset.aiButtonInjected = 'true';
+      }
+
+      // Detect Reply Box
+      const replyBoxElement = document.querySelector('[aria-label^="Message body"]');
+      const isReply = replyBoxElement && replyBoxElement.closest('[data-app-section^="ConversationContainer"]') !== null;
+      const messageBodySelector = '[role="textbox"][aria-label^="Message body"][contenteditable="true"]';
+      const messageBody = document.querySelector(messageBodySelector);
+      if (messageBody && !messageBody.dataset.aiButtonInjected) {
+        insertAIButton(messageBody, false, isReply ? false : true); // isGmail=false, isNewEmail= !isReply
+        messageBody.dataset.aiButtonInjected = 'true';
       }
     });
 
     observer.observe(document.body, { childList: true, subtree: true });
 
-    // Check for the reply box on initial load
-    const replyBox = document.querySelector(
-      '[role="textbox"][aria-label^="Message body"][contenteditable="true"]'
-    );
-    if (replyBox && !replyBox.dataset.aiButtonInjected) {
-      insertAIButton(replyBox, false);
-      replyBox.dataset.aiButtonInjected = 'true';
+    // Initial check for Compose Box
+    const composeBox = document.querySelector('div.aoI[aria-label="New Message"]'); // Adjust selector if different
+    if (composeBox && !composeBox.dataset.aiButtonInjected) {
+      insertAIButton(composeBox, false, true);
+      composeBox.dataset.aiButtonInjected = 'true';
+    }
+
+    // Initial check for Reply Box
+    const replyBoxElement = document.querySelector('[aria-label^="Message body"]');
+    const isReply = replyBoxElement && replyBoxElement.closest('[data-app-section^="ConversationContainer"]') !== null;
+    const messageBodySelector = '[role="textbox"][aria-label^="Message body"][contenteditable="true"]';
+    const messageBody = document.querySelector(messageBodySelector);
+    if (messageBody && !messageBody.dataset.aiButtonInjected) {
+      insertAIButton(messageBody, false, isReply ? false : true);
+      messageBody.dataset.aiButtonInjected = 'true';
     }
   };
 
@@ -340,12 +343,10 @@
 
     // Move the cursor to the end of the inserted content
     if (lastNode) {
-      // Create a new range after the last inserted node
       const newRange = document.createRange();
       newRange.setStartAfter(lastNode);
       newRange.collapse(true);
 
-      // Update the selection
       selection.removeAllRanges();
       selection.addRange(newRange);
     }
@@ -375,13 +376,13 @@
    */
   const init = () => {
     if (currentUrl.includes('mail.google.com')) {
-      monitorGmailReplyBox();
+      monitorGmailComposeOrReplyBox();
     } else if (
       currentUrl.includes('outlook.office.com') ||
       currentUrl.includes('outlook.live.com') ||
       currentUrl.includes('outlook.office365.com')
     ) {
-      monitorOutlookReplyBox();
+      monitorOutlookComposeOrReplyBox();
     }
   };
 
