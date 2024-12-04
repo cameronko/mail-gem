@@ -30,7 +30,11 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
         // Initialize session with a system prompt
         const systemPrompt =
-          'You are an AI assistant that helps users write professional and appropriate email responses. Read the email thread and generate a suitable response ONLY the body of the response nothing else and NO placeholders for information. The bottom email is the most recent and the one you are replying to.';
+          'You are an AI assistant that helps users write professional and appropriate email responses. Read the email thread and generate a suitable response ONLY the body of the response nothing else and NO placeholders for information. The bottom email is the most recent and the one you are replying to.'
+          + 'If replying to a thread, you are replying from the recipient\'s perspective. Under no circumstances should you leave information that is to be filled out by the end user (NO PLACEHOLDER).'
+          + 'If you are creating a new email and not replying, ensure to abide by the user\'s provided context.'
+          + 'All email generations should adhere strictly to the provided context. ONLY GENERATE THE BODY OF THE EMAIL, do not include any subjects, etc.'
+          + 'If too little context is provided, you are free to infer a suitable response BUT DO NOT HALLUCINATE ANY DETAILS.';
         const session = await chrome.aiOriginTrial.languageModel.create({
           systemPrompt: systemPrompt,
         });
