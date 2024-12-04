@@ -168,6 +168,13 @@
     aiButton.appendChild(popupTextarea);
     aiButton.appendChild(generateButton);
 
+    // Listener to remove focus on the text area when the popup collapses
+    aiButton.addEventListener('mouseleave', () => {
+      if (document.activeElement === popupTextarea) {
+        popupTextarea.blur();
+      }
+    });
+
     // Event listener for Generate button
     generateButton.addEventListener('click', async () => {
       generateButton.disabled = true;
