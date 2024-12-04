@@ -189,7 +189,7 @@
         }
 
         const extractor = isGmail ? new GmailExtractor() : new OutlookExtractor();
-        const promptText = extractor.getPrompt();
+        const promptText = isNewEmail ? "" : extractor.getPrompt(); // Only get previous email history if replying
 
         // Include the context from the textarea if available
         const userContext = popupTextarea.value.trim();
@@ -312,55 +312,80 @@
   };
 
   /**
-   * Inserts text at the cursor position in a reply box, handling newlines.
-   * @param {HTMLElement} element - The reply box element.
+   * Inserts text into the message body with a typing effect.
+   * @param {HTMLElement} replyBox - The reply box element.
    * @param {string} text - The text to insert.
    */
-  const insertTextAtCursor = (element, text) => {
-    element.focus();
+  const insertTextAtCursor = (replyBox, text) => {
+    // Find the message body element within the reply box
+    let messageBody;
 
-    const selection = window.getSelection();
-    if (!selection.rangeCount) return;
-
-    // Delete current selection
-    const range = selection.getRangeAt(0);
-    range.deleteContents();
-
-    // Create a document fragment to hold the new nodes
-    const fragment = document.createDocumentFragment();
-
-    // Split the text by newline characters
-    const lines = text.split('\n');
-    lines.forEach((line, index) => {
-      if (index > 0) {
-        // Insert a line break for each newline
-        fragment.appendChild(document.createElement('br'));
-      }
-      if (line) {
-        // Insert the text node
-        fragment.appendChild(document.createTextNode(line));
-      }
-    });
-
-    // Keep a reference to the last node inserted
-    const lastNode = fragment.lastChild;
-
-    // Insert the fragment into the range
-    range.insertNode(fragment);
-
-    // Move the cursor to the end of the inserted content
-    if (lastNode) {
-      const newRange = document.createRange();
-      newRange.setStartAfter(lastNode);
-      newRange.collapse(true);
-
-      selection.removeAllRanges();
-      selection.addRange(newRange);
+    if (currentUrl.includes('mail.google.com')) {
+      // Gmail
+      messageBody = replyBox.querySelector('div[aria-label="Message Body"], div[role="textbox"][contenteditable="true"]');
+    } else if (
+      currentUrl.includes('outlook.office.com') ||
+      currentUrl.includes('outlook.live.com') ||
+      currentUrl.includes('outlook.office365.com')
+    ) {
+      // Outlook
+      messageBody = replyBox.firstChild // The message body is actually inside another child element in outlook
     }
 
-    // Dispatch an input event to notify the email service of the changes
-    const event = new Event('input', { bubbles: true });
-    element.dispatchEvent(event);
+    if (!messageBody) {
+      console.error('Message body element not found.');
+      return;
+    }
+
+    // Ensure the element is focused
+    messageBody.focus();
+
+    // Clear the existing content
+    messageBody.innerHTML = '';
+
+    // Fixed interval
+    const interval = 5; // Interval in milliseconds
+
+    let index = 0;
+
+    const typeNextChar = () => {
+      if (index < text.length) {
+        const char = text[index];
+
+        if (char === '\n') {
+          messageBody.innerHTML += '<br>';
+        } else {
+          messageBody.innerHTML += char;
+        }
+
+        index++;
+        setTimeout(typeNextChar, interval);
+      } else {
+        // Move cursor to the end
+        moveCursorToEnd(messageBody);
+
+        // Dispatch an input event to notify the email service of the changes
+        // Important for ensuring the service saves a draft and updates the viewport
+        const event = new Event('input', { bubbles: true });
+        messageBody.dispatchEvent(event);
+      }
+    };
+
+    typeNextChar();
+  };
+
+  /**
+   * Moves the cursor to the end of the contenteditable element.
+   * @param {HTMLElement} element - The contenteditable element.
+   */
+  const moveCursorToEnd = (element) => {
+    const range = document.createRange();
+    const selection = window.getSelection();
+    range.selectNodeContents(element);
+    range.collapse(false);
+    selection.removeAllRanges();
+    selection.addRange(range);
+    element.focus();
   };
 
   /**
